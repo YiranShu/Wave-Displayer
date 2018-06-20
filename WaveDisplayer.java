@@ -7,9 +7,9 @@ import java.io.IOException;
 public class WaveDisplayer extends JFrame {
     private FileInputStream fis;
     private BufferedInputStream bis;
-    private int[] samples;
-    private int maxValue;
-    private int sampleCount;
+    private int[] samples; //data
+    private int maxValue; //the maximum value of the samples
+    private int sampleCount; //the number of samples
 
     public int twoBytesToInt(byte[] bytes, int offset) {
         return ((int)(bytes[offset]) << 8) | (bytes[offset - 1] & 0xFF);
@@ -24,20 +24,20 @@ public class WaveDisplayer extends JFrame {
         fis = new FileInputStream(fileName);
         bis = new BufferedInputStream(fis);
 
-        byte[] header = new byte[44];
+        byte[] header = new byte[44]; //the first 44 bytes are the header
         bis.read(header, 0, 44);
 
-        int sampleSize = twoBytesToInt(header, 35);
-        int dataSize = fourBytesToInt(header, 43);
-        sampleCount = (int)(dataSize / (sampleSize / 8));
+        int sampleSize = twoBytesToInt(header, 35); //the number of bits per sample
+        int dataSize = fourBytesToInt(header, 43); //the number of bytes of the data area
+        sampleCount = dataSize / (sampleSize / 8);
 
         samples = new int[sampleCount];
 
-        if(sampleSize == 8) {
+        if(sampleSize == 8) { //1 byte per sample
             for(int i = 0; i < sampleCount; i++) {
                 samples[i] = bis.read();
             }
-        } else {
+        } else { //2 bytes per sample
             byte[] temp = new byte[2];
             for(int i = 0; i < sampleCount; i++) {
                 bis.read(temp);
@@ -45,13 +45,13 @@ public class WaveDisplayer extends JFrame {
             }
         }
 
-        findMaxValue();
+        findMaxValue(); //find the maximum value of the samples
 
         fis.close();
         bis.close();
     }
 
-    public void findMaxValue() {
+    public void findMaxValue() { //find the maximum value of the samples
         maxValue = Integer.MIN_VALUE;
 
         for(int elem : samples) {
@@ -62,12 +62,8 @@ public class WaveDisplayer extends JFrame {
     public void showWave(int width, int height) {
         this.setTitle("Wave Displayer");
         this.setSize(width, height);
-        this.setDefaultCloseOperation(3);
-        this.setResizable(false);
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLocationRelativeTo(null);
-
-        System.out.println("Maximum value: " + maxValue);
-        System.out.println("The number of samples: " + sampleCount);
 
         Waveform waveform = new Waveform();
         Dimension dimension = new Dimension(width, height);
@@ -81,7 +77,7 @@ public class WaveDisplayer extends JFrame {
             super.paint(g);
             int width = getWidth();
             int height = getHeight();
-            int step = sampleCount / width;
+            int step = sampleCount / width; //to display the whole waveform, need to get evenly spaced samples
             double intervalY = height / 2.0 / maxValue / 1.5;
             int preX, preY, curX, curY;
 
@@ -89,14 +85,17 @@ public class WaveDisplayer extends JFrame {
             g.setColor(new Color(30, 100, 50));
 
             for(int i = 0; i < width; i++) {
-                curX = i;
-                curY = height - (int)(samples[i * step] * intervalY + height / 2);
+                curX = i; //x coordinate of the current sample
+                curY = height - (int)(samples[i * step] * intervalY + height / 2); //y coordinate of the current sample
 
-                g.drawLine(preX, preY, curX, curY);
+                g.drawLine(preX, preY, curX, curY); //link the previous sample and the current sample
 
-                preX = curX;
-                preY = curY;
+                preX = curX; //x coordinate of the previous sample
+                preY = curY; //y coordinate of the previous sample
             }
+
+            g.drawString("Maximum value: " + maxValue, 10, 15);
+            g.drawString("The number of samples: " + sampleCount, 10, 35);
         }
     }
 
